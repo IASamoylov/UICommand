@@ -6,7 +6,7 @@ namespace WPFF
 {
   public class UICommand : ICommand
   {
-    private readonly static Dictionary<ModifierKeys, string> _modifiersKeys =
+    private static readonly Dictionary<ModifierKeys, string> ModifiersKeys =
       new Dictionary<ModifierKeys, string>()
       {
         {ModifierKeys.None,""},
@@ -19,55 +19,95 @@ namespace WPFF
         {ModifierKeys.Windows,"Win+"}
       };
 
-    private readonly Action _execute;
-    private readonly Func<bool> _canExecute;
-    private readonly Key _key;
-    private readonly ModifierKeys _modifier;
+    private readonly Action<object> _execute;
+    private readonly Func<object, bool> _canExecute = (parameter) => true;
 
-    public Key Key => _key;
-    public ModifierKeys Modifier => _modifier;
+    public UICommand(Action execute) : this(execute, Key.None)
+    {
+    }
+    public UICommand(Action execute, Key key) : this(execute, key, ModifierKeys.None)
+    {
+    }
+    public UICommand(Action execute, Key key, ModifierKeys modifierKeys) : this(execute, null, key, modifierKeys)
+    {
+    }
+    public UICommand(Action execute, Func<bool> canExecute): this(execute, canExecute, Key.None, ModifierKeys.None)
+    {
+    }
+    public UICommand(Action execute, Func<bool> canExecute, Key key, ModifierKeys modifierKeys) 
+    {
+      if (execute == null)
+        throw new ArgumentNullException(nameof(execute));
+
+      _execute = (parameter) => execute();
+
+      if (canExecute != null)
+        _canExecute = (parameter) => canExecute();
+
+      Key = key;
+      Modifier = modifierKeys;
+    }
+  
+    public UICommand(Action<object> execute) : this(execute, Key.None)
+    {
+    }
+    public UICommand(Action<object> execute, Key key) : this(execute, key, ModifierKeys.None)
+    {
+    }
+    public UICommand(Action<object> execute, Key key, ModifierKeys modifierKeys) : this(execute, null, key, modifierKeys)
+    {
+    }
+    public UICommand(Action<object> execute, Func<object, bool> canExecute) : this(execute, canExecute, Key.None, ModifierKeys.None)
+    {
+    }
+    public UICommand(Action<object> execute, Func<object, bool> canExecute, Key key, ModifierKeys modifierKeys)
+    {
+      if (execute == null)
+        throw new ArgumentNullException(nameof(execute));
+
+      _execute = execute;
+
+      if (canExecute != null)
+        _canExecute = canExecute;
+
+      Key = key;
+      Modifier = modifierKeys;
+    }
+ 
+
+    public event EventHandler CanExecuteChanged
+    {
+      add
+      {
+        CommandManager.RequerySuggested += value;
+      }
+
+      remove
+      {
+        CommandManager.RequerySuggested -= value;
+      }
+    }
+
+    public Key Key { get; }
+
+    public ModifierKeys Modifier { get; }
 
     public string GestureText
     {
       get
       {
-        return _key == Key.None ? string.Empty : $"{_modifiersKeys[_modifier]}{_key}";
+        return Key == Key.None ? string.Empty : $"{ModifiersKeys[Modifier]}{Key}";
       }
     }
 
-    private event EventHandler CanExecuteChangedInternal;
-
-    public UICommand(Action execute)
-    {
-      if (execute == null)
-        throw new ArgumentNullException(nameof(execute));
-
-      _execute = execute;
-      _canExecute = () => true;
-    }
-
-    public UICommand(Action execute, Func<bool> canExecute)
-    {
-      if (execute == null)
-        throw new ArgumentNullException(nameof(execute));
-
-      if (canExecute == null)
-        throw new ArgumentNullException(nameof(canExecute));
-
-      _execute = execute;
-      _canExecute = canExecute;
-    }
-
-    public event EventHandler CanExecuteChanged;
-
     public bool CanExecute(object parameter)
     {
-      return _canExecute();
+      return _canExecute(parameter);
     }
 
     public void Execute(object parameter)
     {
-      _execute();
+      _execute(parameter);
     }
   }
 }
