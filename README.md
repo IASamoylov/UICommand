@@ -86,3 +86,5 @@ public class MainViewModel
     public string Text { get; set; }
   }
 ```
+
+![Sample img](http://s8.hostingkartinok.com/uploads/images/2016/07/c716b9e9cdf2e958db355986c2d1cecd.jpg)
